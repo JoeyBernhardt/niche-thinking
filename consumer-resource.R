@@ -6,7 +6,7 @@ library(cowplot)
 
 
 
-R1_input = 100 
+R1_input = 200 
 R2_input = 120
 D1_input = 0.02
 D2_input = 0.02
@@ -14,7 +14,7 @@ N1_input = 40
 N2_input = 40
 f11_input = 0.04
 f21_input = 0.05
-f12_input = 0.3
+f12_input = 0.4
 f22_input = 0.06
 a12_input = 0.01
 a22_input = 0.03
@@ -24,17 +24,17 @@ S_input = 10
 c1_input = 0.5
 c2_input = 0.5
 
+## green species
 Rstar1 <- D1_input/(f11_input*a11_input) ## make this bigger
 ZNGI_1_slope <- (-f11_input*a11_input)/(f12_input*a12_input) ## make this more negative
 # ZNGI_1_intercept <- (D1_input - f11_input*a11_input*Rstar1)/(f12_input*a12_input)
 
-
+## blue species
 Rstar2 <- D2_input/(f21_input*a21_input) ## make this bigger
 ZNGI_2_slope <- (-f21_input*a21_input)/(f22_input*a22_input) ## make this less negative
 # ZNGI_2_intercept <- (D2_input - f21_input*a21_input*Rstar2)/(f22_input*a22_input)
-# ZNGI_2_intercept <- 7
 
-impact_vector1_slope <- (f12_input*R2_input)/(f11_input*R1_input)
+impact_vector1_slope <- (f12_input*R2_input)/(f11_input*R1_input) ## green
 impact_vector2_slope <- (f22_input*R2_input)/(f21_input*R1_input)
 
 ggplot() +
@@ -87,7 +87,6 @@ ggplot() +
 			   resource1 = R1,
 			   resource2 = R2) %>% 
 		gather(key = type, value = value, algae1, algae2, resource1, resource2)
-	# Return to the main program, passing back the timeseries of P   
 	# return(out.df)
 # }
 
