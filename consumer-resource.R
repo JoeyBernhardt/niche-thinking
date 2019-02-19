@@ -6,37 +6,45 @@ library(cowplot)
 
 
 
-R1_input = 10
-R2_input = 12
-D1_input = 1
-D2_input = 1
+R1_input = 100 
+R2_input = 120
+D1_input = 0.02
+D2_input = 0.02
 N1_input = 40
 N2_input = 40
-f11_input = 4
-f21_input = 0.4
-f12_input = 3
-f22_input = 0.4
-a12_input = 0.2
-a22_input = 0.3
-a11_input = 0.2
-a21_input = 0.4
+f11_input = 0.04
+f21_input = 0.05
+f12_input = 0.3
+f22_input = 0.06
+a12_input = 0.01
+a22_input = 0.03
+a11_input = 0.07
+a21_input = 0.04
 S_input = 10
 c1_input = 0.5
 c2_input = 0.5
 
-Rstar1 <- D1_input/(f11_input*a11_input)
-ZNGI_1_slope <- (-f11_input*a11_input)/(f12_input*a12_input)
-ZNGI_1_intercept <- (D1_input - f11_input*a11_input*Rstar1)/(f12_input*a12_input)
+Rstar1 <- D1_input/(f11_input*a11_input) ## make this bigger
+ZNGI_1_slope <- (-f11_input*a11_input)/(f12_input*a12_input) ## make this more negative
+# ZNGI_1_intercept <- (D1_input - f11_input*a11_input*Rstar1)/(f12_input*a12_input)
 
 
-Rstar2 <- D2_input/(f21_input*a21_input)
-ZNGI_2_slope <- (-f21_input*a21_input)/(f22_input*a22_input)
-ZNGI_2_intercept <- (D2_input - f21_input*a21_input*Rstar2)/(f22_input*a22_input)
+Rstar2 <- D2_input/(f21_input*a21_input) ## make this bigger
+ZNGI_2_slope <- (-f21_input*a21_input)/(f22_input*a22_input) ## make this less negative
+# ZNGI_2_intercept <- (D2_input - f21_input*a21_input*Rstar2)/(f22_input*a22_input)
+# ZNGI_2_intercept <- 7
+
+impact_vector1_slope <- (f12_input*R2_input)/(f11_input*R1_input)
+impact_vector2_slope <- (f22_input*R2_input)/(f21_input*R1_input)
 
 ggplot() +
-	geom_abline(slope = ZNGI_1_slope, intercept = ZNGI_1_intercept, color = "green") +
-	geom_abline(slope = ZNGI_2_slope, intercept = ZNGI_2_intercept, color = "blue") +
-	ylim(0, 10) +xlim(0, 10) + geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + coord_cartesian()
+	geom_abline(slope = ZNGI_1_slope, intercept = Rstar1, color = "green") +
+	geom_abline(slope = ZNGI_2_slope, intercept = Rstar2, color = "blue") +
+	ylim(0, 15) +xlim(0, 15) + geom_hline(yintercept = 0) + geom_vline(xintercept = 0) + 
+	coord_cartesian() + ylab("Resource 2") + xlab("Resource 1") +
+	geom_abline(slope = impact_vector1_slope, intercept = -16, color = "green", linetype = "dashed") +
+	geom_abline(slope = impact_vector2_slope, intercept = 1, color = "blue", linetype = "dashed")
+
 
 
 
