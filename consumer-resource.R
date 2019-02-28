@@ -27,15 +27,19 @@ c2_input = 0.5
 ## green species
 Rstar1 <- D1_input/(f11_input*a11_input) ## make this bigger
 ZNGI_1_slope <- (-f11_input*a11_input)/(f12_input*a12_input) ## make this more negative
-# ZNGI_1_intercept <- (D1_input - f11_input*a11_input*Rstar1)/(f12_input*a12_input)
 
 ## blue species
 Rstar2 <- D2_input/(f21_input*a21_input) ## make this bigger
 ZNGI_2_slope <- (-f21_input*a21_input)/(f22_input*a22_input) ## make this less negative
-# ZNGI_2_intercept <- (D2_input - f21_input*a21_input*Rstar2)/(f22_input*a22_input)
 
-impact_vector1_slope <- (f12_input*R2_input)/(f11_input*R1_input) ## green
-impact_vector2_slope <- (f22_input*R2_input)/(f21_input*R1_input)
+impact_vector1_slope <- (f12_input*R2_input)/(f11_input*R1_input) ## green species
+impact_vector2_slope <- (f22_input*R2_input)/(f21_input*R1_input) ## blue species
+
+## to get local coexistence, this must be TRUE: (i.e. ZNGIs criss-cross)
+(f22_input*a22_input)/(f21_input*a21_input) > (f11_input*a11_input)/(f12_input*a12_input)
+
+## to get stable coexistence, this must be TRUE: (i.e. species must consume less of the resource that more limits it)
+(f22_input*R2_input)/(f21_input*R1_input) > (f12_input*R2_input)/(f11_input*R1_input)
 
 ggplot() +
 	geom_abline(slope = ZNGI_1_slope, intercept = Rstar1, color = "green") +
