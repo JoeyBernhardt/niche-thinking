@@ -13,6 +13,9 @@ data <- read_csv("data-raw/population4-nitrate.csv") %>%
 		   R = nitrate) %>% 
 	filter(starting_nitrate == 1000, well_plate == "B03_29") 
 
+write_csv(data, "data-processed/pop4_b03.csv")
+
+data <- read_csv("data-processed/pop4_b03.csv") ## manually added a bit of error here
 data %>%
 	ggplot(aes(x = days, y = N)) + geom_point() +
 	geom_point(data = data, aes(x = days, y = R), color = "blue") 
@@ -28,11 +31,12 @@ UpperBound <- c(r = 3, K = 500, m = 1)
 ParamScaling <- 1 / UpperBound
 
 
+
 monod_model <- new("odeModel",
 			   main = function (time, init, parms) {
 			   	with(as.list(c(init, parms)), {
-			   		dN <-  r * (R / (R + k)) - m
-			   		dR <-  (-N + m * N) / 1
+			   		dN <-  r * (R / (R + k)) - 0.1
+			   		dR <-  (-N + 0.1 * N) / 1
 			   		list(c(dN, dR))
 			   	})
 			   },

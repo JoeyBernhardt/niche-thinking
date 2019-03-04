@@ -95,3 +95,47 @@ times(cs1) <- obstime
 yobs %>% 
 	ggplot(aes(x = obstime, y = X)) + geom_point() +
 	geom_point(aes(x = obstime, y = yobs$S), color = "red")
+
+data <- data[[3]]
+
+
+monod_fit <- function(data){
+	parms(cs1)[pars] <- c(vm=1, km=10, Y=1, S0 = data$starting_nitrate[[1]], D = 0)
+	yobs <- select(data, X, S) 
+	whichpar <- c("vm", "km")
+	obstime <- data$days
+	times(cs1) <- obstime
+	init(cs1) <- c(X = yobs$X[1], S = yobs$S[1]) # Set initial model conditions 
+
+		obstime <- data$days # The X values of the observed data points we are fitting our model to
+
+	
+	fitted_monod_model <- fitOdeModel(cs1, whichpar = whichpar,
+									  lower = lower, upper=upper,
+									  obstime = obstime, yobs = yobs, method = "PORT",
+									  control=list(trace = FALSE))
+	
+	population <- data$population[1]
+	vm <- coef(fitted_monod_model)[1]
+	k <- coef(fitted_monod_model)[2]
+	# m <- coef(fitted_monod_model)[3]
+	ID <- data$well_plate[1]
+	# population <- tail(parms(CRmodel), n=1)
+	output <- data.frame(ID, population, vm, k)
+	return(output)
+}
+
+
+data <- read_csv("data-raw/population4-nitrate.csv") %>% 
+	select(days, RFU, nitrate_concentration, population, well_plate) %>% 
+	rename(starting_nitrate = nitrate_concentration) %>% 
+	mutate(nitrate = starting_nitrate - RFU/20) %>% 
+	rename(X = RFU,
+		   S = nitrate) %>% 
+	filter(starting_nitrate == 1000) %>% 
+	split(.$well_plate)
+
+data <- data[4]
+
+
+fits <- map_df(data, monod_fit)
