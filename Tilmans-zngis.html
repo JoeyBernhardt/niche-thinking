@@ -123,7 +123,7 @@ $(document).ready(function () {
 
 <h1 class="title toc-ignore">Playing around with ZNGIs</h1>
 <h4 class="author"><em>Joey</em></h4>
-<h4 class="date"><em>Wed Feb 27 17:23:28 2019</em></h4>
+<h4 class="date"><em>Wed Feb 27 17:32:02 2019</em></h4>
 
 </div>
 
@@ -135,18 +135,23 @@ knitr::opts_chunk$set(cache = TRUE)</code></pre>
 <pre class="r"><code>library(tidyverse)
 library(cowplot)</code></pre>
 <p>Setup Tilman’s consumer resource model parameters</p>
-<pre class="r"><code>D = 0.7
+<pre class="r"><code>### Here species 1 is RED species 2 is BLUE
+
+D = 0.7
 c11 = 2; c12 = 4; c21 = 4; c22 = 2 ### cij = per capita consumption of comsumer i on resource j
 w11 = 2; w12 = 4; w21 = 4; w22 = 2 ## wij = weighting factor that converts availability of resource j into consumer Ni
 k1 = 0.4; k2 = 0.4
 r1 = 1; r2 = 1
-T1 = 0.1; T2 = 0.1</code></pre>
+T1 = 0.1; T2 = 0.1
+
+species1_consumption &lt;- c12/c11
+species2_consumption &lt;- c22/c21</code></pre>
 <p>Calculate slope and intercept for the ZNGI’s (get this from equation S3 in Ke and Letten)</p>
 <pre class="r"><code>slope.1 &lt;-  - (w11 / w12)
 slope.2 &lt;-  - (w21 / w22)
 y.inter.1 &lt;-  (D * (k1 - T1) + r1 * T1) / (w12 * (r1 - D))
 y.inter.2 &lt;-  (w21 / w22) * (D * (k2 - T2) + r2 * T2) / (w21 * (r2 - D))</code></pre>
-<p>Calculate equilibrium resource values (when the ZNGIs cross each other, i.e. such that equation S3.1 = S3.2)</p>
+<p>Calculate equilibrium resource values (when the ZNGIs cross each other, i.e. such that Ke and Letten equations S3.1 = S3.2)</p>
 <pre class="r"><code>B1 &lt;-  y.inter.1
 B2 &lt;-  y.inter.2
 Lamda.1 &lt;-  (w11 / w12)

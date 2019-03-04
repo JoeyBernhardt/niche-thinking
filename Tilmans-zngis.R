@@ -19,6 +19,8 @@ library(cowplot)
 
 #' Setup Tilman's consumer resource model parameters 
 
+### Here species 1 is RED species 2 is BLUE
+
 D = 0.7
 c11 = 2; c12 = 4; c21 = 4; c22 = 2 ### cij = per capita consumption of comsumer i on resource j
 w11 = 2; w12 = 4; w21 = 4; w22 = 2 ## wij = weighting factor that converts availability of resource j into consumer Ni
@@ -26,6 +28,8 @@ k1 = 0.4; k2 = 0.4
 r1 = 1; r2 = 1
 T1 = 0.1; T2 = 0.1
 
+species1_consumption <- c12/c11
+species2_consumption <- c22/c21
 
 #' Calculate slope and intercept for the ZNGI's (get this from equation S3 in Ke and Letten)
 slope.1 <-  - (w11 / w12)
@@ -34,7 +38,7 @@ y.inter.1 <-  (D * (k1 - T1) + r1 * T1) / (w12 * (r1 - D))
 y.inter.2 <-  (w21 / w22) * (D * (k2 - T2) + r2 * T2) / (w21 * (r2 - D))
 
 
-#' Calculate equilibrium resource values (when the ZNGIs cross each other, i.e. such that equation S3.1 = S3.2)
+#' Calculate equilibrium resource values (when the ZNGIs cross each other, i.e. such that Ke and Letten equations S3.1 = S3.2)
 B1 <-  y.inter.1
 B2 <-  y.inter.2
 Lamda.1 <-  (w11 / w12)
