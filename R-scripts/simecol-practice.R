@@ -4,6 +4,7 @@
 
 
 library(simecol)
+library(readxl)
 
 
 data("chemostat")
@@ -11,7 +12,7 @@ solver(chemostat)
 
 
 solver(chemostat) <- function(y, times, func, parms, ...) {
-	 ode(y, times, func, parms, method = "adams", ...)
+	 ode(y, times, func, parms, method = "rk4", ...)
 }
 
 
@@ -96,18 +97,31 @@ yobs %>%
 	ggplot(aes(x = obstime, y = X)) + geom_point() +
 	geom_point(aes(x = obstime, y = yobs$S), color = "red")
 
-data <- data[[3]]
 
 
-monod_fit <- function(data){
-	parms(cs1)[pars] <- c(vm=1, km=10, Y=1, S0 = data$starting_nitrate[[1]], D = 0)
-	yobs <- select(data, X, S) 
+
+data("chemostat")
+solver(chemostat)
+
+
+solver(chemostat) <- function(y, times, func, parms, ...) {
+	ode(y, times, func, parms, method = "rk4", ...)
+}
+
+
+cs1 <- chemostat
+
+
+monod_fit <- function(df){
+	data_mod <- df
+	parms(cs1)[pars] <- c(vm=1, km=10, Y=1, S0 = data_mod$starting_nitrate[1], D = 0)
+	yobs <- select(data_mod, X, S) 
 	whichpar <- c("vm", "km")
-	obstime <- data$days
+	obstime <- data_mod$days
 	times(cs1) <- obstime
 	init(cs1) <- c(X = yobs$X[1], S = yobs$S[1]) # Set initial model conditions 
 
-		obstime <- data$days # The X values of the observed data points we are fitting our model to
+	obstime <- data_mod$days # The X values of the observed data points we are fitting our model to
 
 	
 	fitted_monod_model <- fitOdeModel(cs1, whichpar = whichpar,
@@ -115,27 +129,62 @@ monod_fit <- function(data){
 									  obstime = obstime, yobs = yobs, method = "PORT",
 									  control=list(trace = FALSE))
 	
-	population <- data$population[1]
+	population <- data_mod$population[1]
 	vm <- coef(fitted_monod_model)[1]
 	k <- coef(fitted_monod_model)[2]
-	# m <- coef(fitted_monod_model)[3]
-	ID <- data$well_plate[1]
-	# population <- tail(parms(CRmodel), n=1)
+	ID <- data_mod$well_plate[1]
 	output <- data.frame(ID, population, vm, k)
 	return(output)
 }
 
 
-data <- read_csv("data-raw/population4-nitrate.csv") %>% 
+data_raw <- read_csv("data-raw/nitrate-abundances-processed.csv") %>% 
 	select(days, RFU, nitrate_concentration, population, well_plate) %>% 
 	rename(starting_nitrate = nitrate_concentration) %>% 
 	mutate(nitrate = starting_nitrate - RFU/20) %>% 
 	rename(X = RFU,
 		   S = nitrate) %>% 
-	filter(starting_nitrate == 1000) %>% 
+	# filter(starting_nitrate == 1000) %>% 
+	filter(well_plate != "B02_28") %>% 
 	split(.$well_plate)
 
-data <- data[4]
 
 
-fits <- map_df(data, monod_fit)
+
+
+fits <- map_df(data_raw, monod_fit)
+
+
+nitrate_key <- read_csv("data-raw/nitrate-abundances-processed.csv") %>% 
+	select(population, well_plate) %>% 
+	distinct(population, well_plate)
+
+treatments <- read_excel("data-raw/ChlamEE_Treatments_JB.xlsx") %>% 
+	janitor::clean_names()
+
+library(plotrix)
+fits2 <- fits %>%
+	filter(k != "500") %>% 
+	group_by(population) %>% 
+	summarise_each(funs(mean, std.error), k, vm) 
+
+
+fits3 <- left_join(fits2, treatments)
+fits4 <- left_join(filter(fits, k != "500"), treatments)
+
+
+fits4 %>% 
+	filter(!is.na(treatment)) %>% 
+	# group_by(treatment) %>% 
+	# summarise_each(funs(mean, std.error), k) %>% 
+	ggplot(aes(x = reorder(treatment, mean), y = mean)) + geom_point() + 
+	geom_errorbar(aes(ymin = mean - std.error, ymax = mean + std.error)) +
+	ylab("k")
+
+fits4 %>% 
+	filter(!is.na(treatment)) %>% 
+	# group_by(treatment) %>% 
+	# summarise_each(funs(mean, std.error), k) %>% 
+	ggplot(aes(x = reorder(treatment, k), y = k)) + geom_point() + 
+	geom_errorbar(aes(ymin = mean - std.error, ymax = mean + std.error)) +
+	ylab("k")
