@@ -2,18 +2,11 @@ library(simecol)
 library(tidyverse)
 library(cowplot)
 
-data<-data.frame(days=c(17.9284722,9.9145833,13.9541667,9.0125000,12.9284722,16.9291667,0.9722222,11.0013889,0.0000000,8.0131944,11.9333333,18.9062500,4.0229167,3.0333333,7.0062500,5.9847222,20.9340278,19.9395833,4.8868056,14.9965278,16.0180556,1.8909722),
-				  N= exp(c(5.112714,4.948780,5.096441,4.588206,5.092295,5.119763,1.449947,5.110046,0.781819,4.255234,4.998089,5.055782,2.663951,2.328480,3.899183,3.413726,4.966042,4.953977,2.900249,5.226657,5.121840,1.808143)))
 
-data <- data %>% 
-	arrange((days))
+### notes march 20 2019 -- keep getting the alpha estimates hitting the lower bounds ugh. not sure what to do next. 
 
-data %>% 
-	ggplot(aes(x = days, y = N)) + geom_point()
 
-data$days
-
-Parameters <- c(r = 1, alpha = 0.0001) ## initial parameter guesses
+Parameters <- c(r = 1, alpha = 0.01) ## initial parameter guesses
 CRmodel <- new("odeModel",
 			   main = function (time, init, parms) {
 			   	with(as.list(c(init, parms)), {
@@ -23,13 +16,13 @@ CRmodel <- new("odeModel",
 			   },
 			   parms = Parameters,
 			   times = c(from = 0, to = 4, by = 0.1), # the time interval over which the model will be simulated.
-			   init = c(N = exp(0.781819)), # starting biovolume
+			   init = c(N = 10), # starting biovolume
 			   solver = "lsoda" #lsoda will be called with tolerances of 1e-9. Default tolerances are both 1e-6. Lower is more accurate.
 )
 
 fittedparms <- c("r", "alpha") # for assigning fitted parameter values to fittedCRmodel
 
-LowerBound <- c(r = 0.01, alpha = 0.0000001)
+LowerBound <- c(r = 0.01, alpha = 0.001)
 UpperBound <- c(r = 3, alpha = 0.1) 
 
 # Declare the "step size" for the PORT algorithm. 1 / UpperBound is recommended
@@ -57,14 +50,13 @@ controlfit <- function(data){
 	return(output)
 }
 
-output
 # fit models --------------------------------------------------------------
 
-Parameters <- c(r = 1, alpha = 0.0001) ## initial parameter guesses
+Parameters <- c(r = 1, alpha = 0.01) ## initial parameter guesses
 
 # Declare the parameters to be used as the bounds for the fitting algorithm
-LowerBound <- c(r = 0.01, alpha = 0.0000001)
-UpperBound <- c(r = 3, alpha = 0.1) 
+LowerBound <- c(r = 0.01, alpha = 0.001)
+UpperBound <- c(r = 5, alpha = 0.5) 
 
 # Declare the "step size" for the PORT algorithm. 1 / UpperBound is recommended
 # by the simecol documentation.
@@ -94,10 +86,55 @@ output_CR_all <- data_split %>%
 alphas <- left_join(output_CR_all, nitrate_key) %>% 
 	filter(population != "COMBO")
 
-
 alphas %>% 
 	ggplot(aes(x = nitrate_concentration, y = alpha)) + geom_point() +
 	facet_wrap( ~ population)
+
+write_csv(alphas, "data-processed/alphas-nitrate.csv")
+
+
+
+# Plot the fits -----------------------------------------------------------
+
+alphas_split <- alphas %>%
+	split(.$well_plate)
+
+df <- alphas_split[[1]]
+
+simulate_growth <- function(df){
+	
+	plotfittedCRmodel <- CRmodel
+	init(plotfittedCRmodel) <- c(N = data$N[1])
+	parms(plotfittedCRmodel)[fittedparms] <- c(df$r[1], df$alpha[1])
+	
+	# set model parameters to fitted values and simulate again
+	times(plotfittedCRmodel) <- c(from=0, to=4, by=0.1)
+	ysim <- out(sim(plotfittedCRmodel, rtol = 1e-9, atol = 1e-9))
+	return(ysim)
+	
+}  
+
+all_simulated_alphas <- alphas_split %>% 
+	map_df(simulate_growth, .id = "well_plate")
+
+
+
+
+all_sim <- all_simulated_alphas %>% 
+	left_join(., nitrate_key) %>%
+	rename(days = time)
+	
+	all_sim %>% 
+	# filter(grepl("B", well_plate)) %>% 
+	# filter(well_plate == "B03_1") %>% 
+	ggplot(aes(x = days, y = N, group = well_plate, color = factor(nitrate_concentration))) +
+	geom_line() +
+	geom_point(aes(x = days, y = N, color = factor(nitrate_concentration)), data= filter(data_nitrate)) +
+	facet_grid(nitrate_concentration ~ population, scales = "free") +
+	scale_color_viridis_d()
+	ggsave("figures/r-alpha-logistic.png", width = 30, height = 20)
+
+
 
 alphas %>% 
 	ggplot(aes(x = nitrate_concentration, y = r, group = population)) + geom_point() +
@@ -105,17 +142,24 @@ alphas %>%
 
 
 mean_r <- alphas %>% 
-	filter(nitrate_concentration == "1000") %>% 
+	filter(nitrate_concentration == 1000) %>% 
 	group_by(population) %>% 
 	summarise_each(funs(mean, max), r) %>% 
 	select(population, mean) %>% 
 	rename(r = mean)
 
-nitrate_r <- left_join(data, mean_r)
+max_r <- alphas %>% 
+	# filter(nitrate_concentration == "1000") %>% 
+	group_by(population) %>% 
+	summarise_each(funs(mean, max), r) %>% 
+	select(population, max) %>% 
+	rename(r = max)
+
+nitrate_r <- left_join(data_nitrate, mean_r)
 
 ### new models with fixed r
 
-Parameters <- c(alpha = 0.0001) ## initial parameter guesses
+Parameters <- c(alpha = 0.01) ## initial parameter guesses
 fixed_r_growth <- new("odeModel",
 			   main = function (time, init, parms) {
 			   	with(as.list(c(init, parms)), {
@@ -131,7 +175,7 @@ fixed_r_growth <- new("odeModel",
 
 fittedparms <- c("alpha") # for assigning fitted parameter values to fittedCRmodel
 
-LowerBound <- c(alpha = 0.0000001)
+LowerBound <- c(alpha = 0.001)
 UpperBound <- c(alpha = 0.1) 
 
 # Declare the "step size" for the PORT algorithm. 1 / UpperBound is recommended
@@ -172,13 +216,28 @@ output_fixed_r <- data_split_r %>%
 
 output_fixed_r2 <- left_join(output_fixed_r, nitrate_key)
 
+
+correct_alphas <- output_fixed_r2 %>% 
+	select(-r)
+
+correct_rs <- alphas %>% 
+	select(-alpha)
+
+all_r_alpha <- left_join(correct_rs, correct_alphas)
+write_csv(all_r_alpha, "data-processed/r-alphas-nitrate.csv")
+
+
 output_fixed_r2 %>% 
 	filter(nitrate_concentration < 100) %>% 
 	ggplot(aes(x = nitrate_concentration, y = alpha)) + geom_point() + facet_wrap( ~ population, scales = "free")
 ggsave("figures/alpha_N.png", height = 15, width = 20)
 
 
-### OK so let's fit a hyperbolic function to these.
+
+# hyperbolic function -----------------------------------------------------
+
+
+# OK so let's fit a hyperbolic function to these.
 library(broom)
 library(nls.multstart)
 
@@ -297,20 +356,27 @@ rstars_alpha %>%
 ggsave("figures/r-star-alpha.png", width = 6, height = 4)
 
 
-#### Now look for the values of dN/dT
+
+
+# find dn nt --------------------------------------------------------------
+
 
 dn <- function(r, alpha, N){
 	dn <- (r - alpha*N)
 	return(dn)
 }
 
-alphas %>% 
-	map_df(dn, .id = "well_plate") %>% View
+# alphas %>% 
+# 	map_df(dn, .id = "well_plate") %>% View
 
 
-
-Ks <- all_r_alpha %>% 
+## look at the Ks
+Ks <- output_fixed_r2 %>% 
+	# all_r_alpha %>% 
 	mutate(K = r/alpha) 
+
+Ks %>% 
+	ggplot(aes(x = r, y = alpha, color = population)) + geom_point()
 
 
 all_r_alpha %>% 
@@ -334,11 +400,40 @@ Ks %>%
 	ggplot(aes(x = nitrate_concentration, y = K, color = log(alpha))) + geom_point() +
 	xlim(0, 30)
 
+#### now lets's plot the fits
 
-correct_alphas <- output_fixed_r2 %>% 
-	select(-r)
+## all_r_alpha these are the parameter values we want to simulate
 
-correct_rs <- alphas %>% 
-	select(-alpha)
+df <- output_fixed_r2 %>% 
+	filter(well_plate == "B02_11")
 
-all_r_alpha <- left_join(correct_rs, correct_alphas)
+
+simulate_growth <- function(df){
+plotfittedCRmodel <- CRmodel
+parms(plotfittedCRmodel)[fittedparms] <- c(df$r[1], df$alpha[1])
+
+# set model parameters to fitted values and simulate again
+times(plotfittedCRmodel) <- c(from=0, to=4, by=0.1)
+ysim <- out(sim(plotfittedCRmodel, rtol = 1e-9, atol = 1e-9))
+
+return(ysim)
+
+}  
+
+output_fixed_r2_split <- output_fixed_r2 %>%
+	split(.$well_plate)
+
+all_simulated <- output_fixed_r2_split %>% 
+	map_df(simulate_growth, .id = "well_plate")
+
+all_simulated2 <- all_simulated %>% 
+	left_join(., nitrate_key)
+
+all_simulated2 %>%
+	rename(days = time) %>% 
+	filter(grepl("B", well_plate)) %>% 
+	ggplot(aes(x = days, y = N, color = factor(nitrate_concentration), group = well_plate)) + geom_line() +
+	# geom_point(aes(x = days, y = N, color = factor(nitrate_concentration)), data= data_nitrate) +
+	facet_wrap(~ well_plate) +
+	scale_color_viridis_d()
+ggsave("figures/all-r-alphas-fits.png", width = 30, height = 30)

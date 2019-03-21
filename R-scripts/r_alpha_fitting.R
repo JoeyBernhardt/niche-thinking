@@ -10,8 +10,8 @@ plot(log.fluor~time,data=egdat)
 ### r - alpha formulation and fitting
 
 
-parameters<-c(r = 1, alpha = 0.001)
-state<-c(N=exp(0.781819))
+parameters<-c(r = 1, alpha = 0.01)
+state<-c(N=10)
 logistic <- function(t,state,parameters){
 	with(as.list(c(state,parameters)),{
 		dN <- (r - alpha*N)*N
@@ -21,7 +21,7 @@ logistic <- function(t,state,parameters){
 	})	# end of with(as.list...
 }
 
-times<-seq(0,20,0.001)
+times<-seq(0,4,0.001)
 
 out<-ode(y=state,times=times,func= logistic,parms=parameters)
 out<-data.frame(out)
@@ -32,8 +32,8 @@ plot(N~time,data=out,type='l',col='red')
 plot(log10(N)~time,data=out,type='l',col='red')
 
 
-parameters<-c(r = 0.86, alpha = 0.005)
-state<-c(N=100)
+parameters<-c(r = 1.8, alpha = 0.05)
+state<-c(N=10)
 # Wrap Monod model ODE in a function that's easier to use with bbmle/mle2
 r_alpha_ode<-function(time.vals, N0, r, alpha,verbose=F,maxtime){
 	
