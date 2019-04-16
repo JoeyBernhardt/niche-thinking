@@ -123,53 +123,29 @@ R_22 <- (m_2*k_22)/(r_2 - m_2)
 
 
 #' plot it!
-ggplot(ZNGI.df, aes(x=blue, y=red)) +   
-	geom_point(x = S1, y = S2, size = 3) +
-	# geom_abline(intercept = y.inter.1, slope = slope.1, col ='#d1495b', size = 0.5) + ## red species' ZNGI
-	# geom_abline(intercept = y.inter.2, slope = slope.2, col ='#30638e', size = 0.5) + ## blue species' ZNGI
+ggplot(ZNGI.df, aes(x=orange, y=purple)) + geom_point(x = S1, y = S2, size = 3) +
 	coord_cartesian(expand = 0, ylim=c(0, mylims.y), xlim = c(0, mylims.x)) +
+	geom_abline(slope = 1, intercept = 0, color = "grey") +
 	
 	## species 1 ZNGIs
-	geom_segment( 
-				 aes(x = R_12, y = R_11, xend = 0.5, yend = R_11),
-				 size = 0.5, 
-				 col='#d1495b') +
-	
-	geom_segment( 
-		aes(x = R_12, y = R_11, xend = R_12, yend = 0.5),
-		size = 0.5, 
-		col='#d1495b') +
+	geom_segment(aes(x = R_12, y = R_11, xend = 0.5, yend = R_11), size = 0.5, col='purple') +
+	geom_segment(aes(x = R_12, y = R_11, xend = R_12, yend = 0.5), size = 0.5, col='purple') +
 	
 	## species 2 ZNGIs
-	geom_segment( 
-		aes(x = R_21, y = R_22, xend = 0.5, yend = R_22),
-		size = 0.5, 
-		col='#30638e') +
+	geom_segment(aes(x = R_21, y = R_22, xend = 0.5, yend = R_22), size = 0.5, col='orange') +
+	geom_segment(aes(x = R_21, y = R_22, xend = R_21, yend = 0.5), size = 0.5, col='orange') +
 	
-	geom_segment( 
-		aes(x = R_21, y = R_22, xend = R_21, yend = 0.5),
-		size = 0.5, 
-		col='#30638e') +
+	geom_segment(aes(x = R_21, y = R_11, xend = R_21 + c11, yend = R_11 + c12),
+				 size = 0.5, col='purple', linetype = 2) +
 	
-	geom_segment(data = params_df, 
-				 aes(x = R1.star, y = R2.star, xend = R1.star-c11/100, yend = R2.star-c12/100),
-				 size = 0.5, 
-				 col='#d1495b', 
-				 arrow = arrow(type = "closed", length = unit(0.05, "inches"))) + 
-	geom_segment(data = params_df, 
-				 aes(x = R1.star, y = R2.star, xend = R1.star-c21/100, yend = R2.star-c22/100), 
-				 size = 0.5, col='#30638e', 
-				 arrow = arrow(type = "closed", length = unit(0.05, "inches"))) + 
-	geom_segment(data = params_df, 
-				 aes(x = R1.star, y = R2.star, xend = R1.star+c11, yend = R2.star+c12), 
-				 size = 0.5, 
-				 col='#d1495b', 
+	geom_segment(aes(x = R_21, y = R_11, xend = R_21-c11/100, yend = R_11-c12/100),
+				 size = 0.5, col='purple', arrow = arrow(type = "closed", length = unit(0.05, "inches"))) +
+
+	geom_segment(aes(x = R_21, y = R_11, xend = R_21 + c21, yend = R_11 + c22), size = 0.5, col='orange', 
 				 linetype = 2) + 
-	geom_segment(data = params_df, 
-				 aes(x = R1.star, y = R2.star, xend = R1.star+c21, yend = R2.star+c22), 
-				 size = 0.5, 
-				 col='#30638e', 
-				 linetype = 2) + 
+	geom_segment(aes(x = R_21, y = R_11, xend = R_21-c21/100, yend = R_11-c22/100), 
+				 size = 0.5, col='orange', 
+				 arrow = arrow(type = "closed", length = unit(0.05, "inches"))) + 
 	xlab(expression(R[1])) + 
 	ylab(expression(R[2])) +
 	
