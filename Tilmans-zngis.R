@@ -48,7 +48,7 @@ R2.star <-  (B2 * Lamda.1 - B1 * Lamda.2) / (Lamda.1 - Lamda.2)
 
 
 #' Supply points
-S1 <-  0.248; S2 <-  0.245
+S1 <-  0.245; S2 <-  0.245
 
 # plot settings
 mylims.x <-  0.55
@@ -121,6 +121,7 @@ R_21 <- (m_2*k_21)/(r_2 - m_2)
 ## R star for species 2, resource 2
 R_22 <- (m_2*k_22)/(r_2 - m_2)
 
+c11 = 2; c12 = 4; c21 = 4; c22 = 2 ### cij = per capita consumption of consumer i on resource j
 
 #' plot it!
 ggplot(ZNGI.df, aes(x=orange, y=purple)) + geom_point(x = S1, y = S2, size = 3) +
@@ -148,10 +149,18 @@ ggplot(ZNGI.df, aes(x=orange, y=purple)) + geom_point(x = S1, y = S2, size = 3) 
 				 arrow = arrow(type = "closed", length = unit(0.05, "inches"))) + 
 	xlab(expression(R[1])) + 
 	ylab(expression(R[2])) +
-	
 	theme(legend.position = "none", 
 		  plot.margin = unit(c(0.8,0.8,0.8,0.8), "lines"),
 		  axis.text = element_text(size=13),
 		  axis.title=element_text(size=20)) +
 	panel_border(colour = "black")
 
+
+library(readxl)
+library(janitor)
+
+stoich <- read_excel("data-raw/stoichiometry.xlsx") %>% 
+	clean_names() %>% 
+	mutate(cN = b_n/biomass) %>% 
+	mutate(cP = b_p/biomass) %>% 
+	select(cN, cP, everything())
